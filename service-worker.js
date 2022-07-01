@@ -1,6 +1,6 @@
-chrome.webRequest.onCompleted.addListener((details) => {
-  chrome.runtime.sendMessage({
-    url: details.url
+chrome.webRequest.onCompleted.addListener(async (details) => {
+  await chrome.storage.session.set({
+    histogramUrl: details.url
   });
 }, {
   urls: [

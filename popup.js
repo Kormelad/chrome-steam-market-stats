@@ -12,9 +12,10 @@ function renderTable(relativeSellOrders) {
 function getRelativeOrderTableHeader() {
   return `
 <tr>
-  <th>Price</th>
-  <th>Count Diff</th>
   <th>Count</th>
+  <th>Count Diff</th>
+  <th>Price</th>
+  <th>Recieve</th>
 </tr>
   `;
 }
@@ -22,9 +23,10 @@ function getRelativeOrderTableHeader() {
 function getRelativeOrderTableRow(relativeOrder) {
   return `
   <tr>
-    <td>${relativeOrder.price}</td>
-    <td>${relativeOrder.countDiff || ''}</td>
     <td>${relativeOrder.count}</td>
+    <td>${relativeOrder.countDiff || 0}</td>
+    <td>${relativeOrder.price}</td>
+    <td>${relativeOrder.recieveAmount}</td>
   </tr>
   `;
 }
@@ -55,6 +57,7 @@ function mapToSellOrders(sellOrderGraph) {
 
 function createRelativeSellOrders(sellOrders, options) {
   const relativeSellOrders = [sellOrders[0]];
+  relativeSellOrders[0].recieveAmount = roundCurrency(relativeSellOrders[0].price / STEAM_TAX);
 
   const sellOrdersLength = sellOrders.length;
   for (let i = 1; i < sellOrdersLength; i++) {
@@ -77,16 +80,19 @@ function roundCurrency(amount) {
   return Math.ceil((amount + Number.EPSILON) * 100) / 100;
 }
 
-chrome.runtime.onMessage.addListener((message) => {
-  if (message.url) {
-    document.getElementById('getStats').value = message.url;
-    document.getElementById('getStats').innerHTML = 'Get Stats';
-  }
-});
+async function getOrdersAndRenderTable(histogramUrl) {
+  const relativeSellOrders = await run(histogramUrl);
+  renderTable(relativeSellOrders);
+};
 
-document.getElementById('getStats').addEventListener('click', async (event) => {
-if (event.target.value) {
-    const relativeSellOrders = await run(event.target.value);
-    renderTable(relativeSellOrders);
+window.onload = async () => {
+  let storage =  await chrome.storage.session.get(['histogramUrl']);
+  if (!storage.histogramUrl) {
+    chrome.storage.session.onChanged.addListener(async () => {
+      storage = await chrome.storage.session.get(['histogramUrl']);
+      getOrdersAndRenderTable(storage.histogramUrl);
+    });
+  } else {
+    getOrdersAndRenderTable(storage.histogramUrl);
   }
-});
+};

@@ -9,6 +9,7 @@
     "service_worker": "service-worker.js"
   },
   "permissions": [
+    "storage",
     "webRequest",
     "https://steamcommunity.com/market/itemordershistogram*"
   ],
